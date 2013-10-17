@@ -15,3 +15,5 @@ docs/apidocs
 docs/html
 docs/pdf
 src
+starcluster-develop.sublime-project
+starcluster-develop.sublime-workspace
