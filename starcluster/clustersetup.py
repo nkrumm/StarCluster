@@ -421,6 +421,8 @@ class DefaultClusterSetup(ClusterSetup):
         self._user = user
         self._user_shell = user_shell
         self._volumes = volumes
+        log.info("Removing %s from NFS if previously present..." % node.alias)
+        self._remove_nfs_exports(node)
         self._setup_hostnames(nodes=[node])
         self._setup_etc_hosts(nodes)
         self._setup_nfs(nodes=[node], start_server=False)
