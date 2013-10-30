@@ -816,6 +816,15 @@ class Node(object):
         hostname_file.close()
         self.ssh.execute('hostname -F /etc/hostname')
 
+    def setup_dns(self, nameserver_ip):
+        """
+        Add a nameserver_ip to /etc/resolv.conf.
+        Nameserver will be added as the FIRST entry in file.
+        """
+        self.ssh.execute(
+            "sed -i \"s/^nameserver/nameserver %s\\nnameserver/\" /etc/resolv.conf" % nameserver_ip)
+
+
     @property
     def network_names(self):
         """ Returns all network names for this node in a dictionary"""
