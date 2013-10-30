@@ -908,7 +908,7 @@ class Cluster(object):
                 self.ec2.wait_for_propagation(spot_requests=resp)
             else:
                 self.ec2.wait_for_propagation(instances=resp[0].instances)
-        self.wait_for_cluster(msg="Waiting for node(s) to come up...")
+        self.wait_for_cluster(aliases=aliases, msg="Waiting for new node(s) to come up...")
         log.debug("Adding node(s): %s" % aliases)
         for alias in aliases:
             node = self.get_node_by_alias(alias)
@@ -1286,7 +1286,7 @@ class Cluster(object):
                       jobid_fn=lambda n: n.alias)
 
     @print_timing("Waiting for cluster to come up")
-    def wait_for_cluster(self, msg="Waiting for cluster to come up..."):
+    def wait_for_cluster(self, aliases=None, msg="Waiting for cluster to come up..."):
         """
         Wait for cluster to come up and display progress bar. Waits for all
         spot requests to become 'active', all instances to be in a 'running'
@@ -1299,7 +1299,11 @@ class Cluster(object):
         try:
             self.wait_for_active_spots()
             self.wait_for_running_instances()
-            self.wait_for_ssh()
+            if aliases is not None:
+                nodes = [self.get_node_by_alias(alias) for alias in aliases]
+            else:
+                nodes = None
+            self.wait_for_ssh(nodes=nodes)
         except Exception:
             self.progress_bar.finish()
             raise
