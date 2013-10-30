@@ -367,6 +367,21 @@ class DefaultClusterSetup(ClusterSetup):
             master.export_fs_to_nodes(nodes, export_paths)
             self._mount_nfs_shares(nodes, export_paths=export_paths)
 
+    def _setup_dns(self, nodes=None):
+        """
+        1. Add host to master's /etc/hosts (so dnsmasq can resolve it)
+        2. Add the master's IP to each node's /etc/resolv.config as a new line
+        """
+        log.info("Setting up DNS nameserver for master's ip (%s)" %
+            self._master.private_ip_address)
+        nodes = nodes or self._nodes
+        self._master.add_to_etc_hosts(nodes)
+        for node in nodes:
+            self.pool.simple_job(node.setup_dns,
+                                 (self._master.private_ip_address, ),
+                                 jobid=node.alias)
+
+
     def run(self, nodes, master, user, user_shell, volumes):
         """Start cluster configuration"""
         self._nodes = nodes
@@ -424,7 +439,9 @@ class DefaultClusterSetup(ClusterSetup):
         log.info("Removing %s from NFS if previously present..." % node.alias)
         self._remove_nfs_exports(node)
         self._setup_hostnames(nodes=[node])
-        self._setup_etc_hosts(nodes)
+        # this one entry is required for SGE's gethostname program to work
+        self._setup_etc_hosts(nodes=[node])
+        self._setup_dns(nodes=[node])
         self._setup_nfs(nodes=[node], start_server=False)
         self._create_user(node)
         self._setup_scratch(nodes=[node])
