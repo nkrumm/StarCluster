@@ -367,6 +367,14 @@ class DefaultClusterSetup(ClusterSetup):
             master.export_fs_to_nodes(nodes, export_paths)
             self._mount_nfs_shares(nodes, export_paths=export_paths)
 
+    def _install_dns(self):
+        """
+        Install dnsmasq on master node. Installation starts the server.
+        """
+        log.info("Installing DNS server (dnsmasq) on master")
+        self._master.apt_install("dnsmasq")
+        
+
     def _setup_dns(self, nodes=None):
         """
         1. Add host to master's /etc/hosts (so dnsmasq can resolve it)
@@ -393,7 +401,8 @@ class DefaultClusterSetup(ClusterSetup):
         self._setup_ebs_volumes()
         self._setup_cluster_user()
         self._setup_scratch()
-        self._setup_etc_hosts()
+        self._install_dns()
+        self._setup_dns()
         self._setup_nfs()
         self._setup_passwordless_ssh()
 
