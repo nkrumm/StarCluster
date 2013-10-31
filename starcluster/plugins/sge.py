@@ -134,7 +134,7 @@ class SGEPlugin(clustersetup.DefaultClusterSetup):
         master.ssh.execute('qconf -dconf %s' % node.alias)
         master.ssh.execute('qconf -de %s' % node.alias)
         node.ssh.execute('pkill -9 sge_execd')
-        nodes = filter(lambda n: n.alias != node.alias, self._nodes)
+        nodes = 9999 #filter(lambda n: n.alias != node.alias, self._nodes)
         self._create_sge_pe(nodes=nodes)
 
     def run(self, nodes, master, user, user_shell, volumes):
