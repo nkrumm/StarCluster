@@ -818,14 +818,20 @@ class Node(object):
 
     def setup_dns(self, nameserver_ip):
         """
-        1. Add nameserver_ip to /etc/resolv.conf.
-            Nameserver will be added as the FIRST entry in file.
-        2. Add entry current node to /etc/hosts 
-            This is required for SGE compatibility
+        1. Add new "prepend domain-name-servers" directive to 
+            /etc/dhcp/dhclient.conf
+        2. Restart network interface to make changes apply. A nameserver
+            entry is added to /etc/resolv.conf (Warning: /etc/resolv.conf is 
+            updated dynamically-- changes to it will NOT hold).
+        2. Add entry for current node to /etc/hosts. This is required for SGE 
+            compatibility
         """
         self.ssh.execute(
-            "sed -i \"s/^nameserver/nameserver %s\\nnameserver/\" /etc/resolv.conf" % nameserver_ip)
+            "echo \"prepend domain-name-servers %s;\" >> "
+            "/etc/dhcp/dhclient.conf"
+            " && service network-interface restart INTERFACE=eth0" % nameserver_ip)
 
+        # required for SGE compatibility
         self.add_to_etc_hosts([self])
 
 

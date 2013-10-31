@@ -370,12 +370,16 @@ class DefaultClusterSetup(ClusterSetup):
 
     def _setup_dns(self, nodes=None, start_server=False):
         """
+        0. Install dnsmasq on master if start_server == True
         1. Add host to master's /etc/hosts (so dnsmasq can resolve it)
-        2. Add the master's IP to each node's /etc/resolv.config as a new line
+        2. Add a new 'prepend domain-name-servers' entry to
+           /etc/dhcp/dhclient.conf with IP address of master node
+        3. Restart eth0 network interface to make changes propagate to 
+           /etc/resolv.conf
         """
         log.info("Setting up DNS-based hostname resolving")
         if start_server:
-            log.debug("Starting DNS server (dnsmasq) on master")
+            log.debug("Installing/starting DNS server (dnsmasq) on master")
             self._master.apt_install("dnsmasq")
         
         log.debug("Adding nodes to /etc/hosts on master")
