@@ -367,23 +367,23 @@ class DefaultClusterSetup(ClusterSetup):
             master.export_fs_to_nodes(nodes, export_paths)
             self._mount_nfs_shares(nodes, export_paths=export_paths)
 
-    def _install_dns(self):
-        """
-        Install dnsmasq on master node. Installation starts the server.
-        """
-        log.info("Installing DNS server (dnsmasq) on master")
-        self._master.apt_install("dnsmasq")
-        
 
-    def _setup_dns(self, nodes=None):
+    def _setup_dns(self, nodes=None, start_server=False):
         """
         1. Add host to master's /etc/hosts (so dnsmasq can resolve it)
         2. Add the master's IP to each node's /etc/resolv.config as a new line
         """
-        log.info("Setting up DNS nameserver for master's ip (%s)" %
-            self._master.private_ip_address)
+        log.info("Setting up DNS-based hostname resolving")
+        if start_server:
+            log.debug("Starting DNS server (dnsmasq) on master")
+            self._master.apt_install("dnsmasq")
+        
+        log.debug("Adding nodes to /etc/hosts on master")
         nodes = nodes or self._nodes
         self._master.add_to_etc_hosts(nodes)
+
+        log.debug("Setting up DNS nameserver on each node")
+        
         for node in nodes:
             self.pool.simple_job(node.setup_dns,
                                  (self._master.private_ip_address, ),
@@ -401,8 +401,7 @@ class DefaultClusterSetup(ClusterSetup):
         self._setup_ebs_volumes()
         self._setup_cluster_user()
         self._setup_scratch()
-        self._install_dns()
-        self._setup_dns()
+        self._setup_dns(start_server=True)
         self._setup_nfs()
         self._setup_passwordless_ssh()
 
@@ -429,8 +428,8 @@ class DefaultClusterSetup(ClusterSetup):
         log.info("Removing node %s (%s)..." % (node.alias, node.id))
         log.info("Removing %s from known_hosts files" % node.alias)
         self._remove_from_known_hosts(node)
-        log.info("Removing %s from /etc/hosts" % node.alias)
-        self._remove_from_etc_hosts(node)
+        log.info("Removing %s from DNS (/etc/hosts on master)" % node.alias)
+        self._master.remove_from_etc_hosts([node])
         log.info("Removing %s from NFS" % node.alias)
         self._remove_nfs_exports(node)
 
@@ -448,9 +447,7 @@ class DefaultClusterSetup(ClusterSetup):
         log.info("Removing %s from NFS if previously present..." % node.alias)
         self._remove_nfs_exports(node)
         self._setup_hostnames(nodes=[node])
-        # this one entry is required for SGE's gethostname program to work
-        self._setup_etc_hosts(nodes=[node])
-        self._setup_dns(nodes=[node])
+        self._setup_dns(nodes=[node], start_server=False)
         self._setup_nfs(nodes=[node], start_server=False)
         self._create_user(node)
         self._setup_scratch(nodes=[node])

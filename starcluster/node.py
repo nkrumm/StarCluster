@@ -818,11 +818,15 @@ class Node(object):
 
     def setup_dns(self, nameserver_ip):
         """
-        Add a nameserver_ip to /etc/resolv.conf.
-        Nameserver will be added as the FIRST entry in file.
+        1. Add nameserver_ip to /etc/resolv.conf.
+            Nameserver will be added as the FIRST entry in file.
+        2. Add entry current node to /etc/hosts 
+            This is required for SGE compatibility
         """
         self.ssh.execute(
             "sed -i \"s/^nameserver/nameserver %s\\nnameserver/\" /etc/resolv.conf" % nameserver_ip)
+
+        self.add_to_etc_hosts([self])
 
 
     @property
