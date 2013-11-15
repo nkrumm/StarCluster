@@ -166,16 +166,16 @@ class ClusterManager(managers.Manager):
 
     def add_node(self, cluster_name, alias=None, no_create=False,
                  image_id=None, instance_type=None, zone=None,
-                 placement_group=None, spot_bid=None):
+                 placement_group=None, spot_bid=None, force_reserved=False):
         cl = self.get_cluster(cluster_name)
         return cl.add_node(alias=alias, image_id=image_id,
                            instance_type=instance_type, zone=zone,
                            placement_group=placement_group, spot_bid=spot_bid,
-                           no_create=no_create)
+                           no_create=no_create, force_reserved=force_reserved)
 
     def add_nodes(self, cluster_name, num_nodes, aliases=None, no_create=False,
                   image_id=None, instance_type=None, zone=None,
-                  placement_group=None, spot_bid=None):
+                  placement_group=None, spot_bid=None, force_reserved=False):
         """
         Add one or more nodes to cluster
         """
@@ -183,7 +183,7 @@ class ClusterManager(managers.Manager):
         return cl.add_nodes(num_nodes, aliases=aliases, image_id=image_id,
                             instance_type=instance_type, zone=zone,
                             placement_group=placement_group, spot_bid=spot_bid,
-                            no_create=no_create)
+                            no_create=no_create, force_reserved=force_reserved)
 
     def remove_node(self, cluster_name, alias, terminate=True):
         """
@@ -862,7 +862,7 @@ class Cluster(object):
 
     def add_node(self, alias=None, no_create=False, image_id=None,
                  instance_type=None, zone=None, placement_group=None,
-                 spot_bid=None):
+                 spot_bid=None, force_reserved=False):
         """
         Add a single node to this cluster
         """
@@ -872,11 +872,12 @@ class Cluster(object):
         return self.add_nodes(1, aliases=aliases, image_id=image_id,
                               instance_type=instance_type, zone=zone,
                               placement_group=placement_group,
-                              spot_bid=spot_bid, no_create=no_create)
+                              spot_bid=spot_bid, no_create=no_create,
+                              force_reserved=force_reserved)
 
     def add_nodes(self, num_nodes, aliases=None, image_id=None,
                   instance_type=None, zone=None, placement_group=None,
-                  spot_bid=None, no_create=False):
+                  spot_bid=None, no_create=False, force_reserved=False):
         """
         Add new nodes to this cluster
 
@@ -894,6 +895,8 @@ class Cluster(object):
         if "master" in aliases:
             raise exception.ClusterValidationError(
                 "worker nodes cannot have master as an alias")
+        if force_reserved:
+            spot_bid = None
         if not no_create:
             for node in running_pending:
                 if node.alias in aliases:
@@ -903,8 +906,8 @@ class Cluster(object):
             resp = self.create_nodes(aliases, image_id=image_id,
                                      instance_type=instance_type, zone=zone,
                                      placement_group=placement_group,
-                                     spot_bid=spot_bid)
-            if spot_bid or self.spot_bid:
+                                     spot_bid=spot_bid, force_flat=force_reserved)
+            if (spot_bid or self.spot_bid) and not force_reserved:
                 self.ec2.wait_for_propagation(spot_requests=resp)
             else:
                 self.ec2.wait_for_propagation(instances=resp[0].instances)

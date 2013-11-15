@@ -98,6 +98,10 @@ class CmdAddNode(ClusterCompleter):
             "-x", "--no-create", dest="no_create", action="store_true",
             default=False, help="do not launch new EC2 instances when "
             "adding nodes (use existing instances instead)")
+        parser.add_option(
+            "-r", "--force-reserved", dest="force_reserved", action="store_true",
+            default=False, help="Do not use spot bid, even if config specifies "
+            " (useful for adding non-spot nodes in a spot cluster)")
 
     def _get_duplicate(self, lst):
         d = {}
@@ -134,4 +138,5 @@ class CmdAddNode(ClusterCompleter):
                           image_id=self.opts.image_id,
                           instance_type=self.opts.instance_type,
                           zone=self.opts.zone, spot_bid=self.opts.spot_bid,
-                          no_create=self.opts.no_create)
+                          no_create=self.opts.no_create, 
+                          force_reserved=self.opts.force_reserved)
