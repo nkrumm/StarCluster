@@ -417,9 +417,10 @@ class DefaultClusterSetup(ClusterSetup):
     def _remove_nfs_exports(self, node):
         self._master.stop_exporting_fs_to_nodes([node])
 
-    def _remove_from_known_hosts(self, node):
-        nodes = filter(lambda x: x.id != node.id, self.running_nodes)
+    def _remove_from_known_hosts(self, node, nodes=None):
+        nodes = nodes or filter(lambda x: x.id != node.id, self.running_nodes)
         for n in nodes:
+            log.info("Removing %s from known_hosts on %s" % (node.alias, n.alias))
             n.remove_from_known_hosts('root', [node])
             n.remove_from_known_hosts(self._user, [node])
 
@@ -430,8 +431,8 @@ class DefaultClusterSetup(ClusterSetup):
         self._user_shell = user_shell
         self._volumes = volumes
         log.info("Removing node %s (%s)..." % (node.alias, node.id))
-        log.info("Removing %s from known_hosts files" % node.alias)
-        self._remove_from_known_hosts(node)
+        log.info("Removing %s from master known_hosts files" % node.alias)
+        self._remove_from_known_hosts(node, [self._master])
         log.info("Removing %s from DNS (/etc/hosts on master)" % node.alias)
         self._master.remove_from_etc_hosts([node])
         log.info("Removing %s from NFS" % node.alias)
