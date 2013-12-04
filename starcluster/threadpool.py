@@ -88,7 +88,7 @@ class SimpleJob(workerpool.jobs.SimpleJob):
 
 
 class ThreadPool(workerpool.WorkerPool):
-    def __init__(self, size=1, maxjobs=10, worker_factory=_worker_factory,
+    def __init__(self, size=1, maxjobs=0, worker_factory=_worker_factory,
                  disable_threads=False):
         self.disable_threads = disable_threads
         self._exception_queue = Queue.Queue()
